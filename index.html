@@ -45,7 +45,6 @@
 				[ 'number', 'number', 'number', 'number', 'number' ]
 			);
 
-
 			function compressImageData( imageData, flags ) {
 
 				flags = flags || ( ( 1 << 4 ) | 1 );
@@ -78,27 +77,27 @@
 
 			}
 
-			fetch( 'image.jpg' ).then( res => {
+			setTimeout( function () {
 
-				return res.blob();
+				 var image = document.createElementNS( 'http://www.w3.org/1999/xhtml', 'img' );
 
-			} ).then( blob => {
+				image.addEventListener( 'load', function ( e ) {
 
-				return createImageBitmap( blob );
+					var width = image.width;
+					var height = image.height;
+					var canvas = document.createElement( 'canvas' );
+					canvas.width = width;
+					canvas.height = height;
+					var context = canvas.getContext( '2d' );
+					context.drawImage( image, 0, 0, width, height );
+					var data = context.getImageData( 0, 0, width, height );
+					compressImageData( data );
 
-			} ).then( bitmap => {
+				} );
 
-				var width = bitmap.width;
-				var height = bitmap.height;
-				var canvas = document.createElement( 'canvas' );
-				canvas.width = width;
-				canvas.height = height;
-				var context = canvas.getContext( '2d' );
-				context.drawImage( bitmap, 0, 0, width, height );
-				var data = context.getImageData( 0, 0, width, height );
-				compressImageData( data );
+				image.src = 'image.jpg';
 
-			} );
+			}, 1000 );
 
 		</script>
 	</body>
