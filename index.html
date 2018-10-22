@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - glTF loader</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				font-family: Monospace;
+				background-color: #000;
+				color: #fff;
+				margin: 0px;
+				overflow: hidden;
+			}
+			#info {
+				color: #fff;
+				position: absolute;
+				top: 10px;
+				width: 100%;
+				text-align: center;
+				z-index: 100;
+				display:block;
+			}
+			#info a {
+				color: #75ddc1;
+				font-weight: bold;
+			}
+		</style>
+	</head>
+
+	<body>
+		<script src="./squish.js"></script>
+
+		<script>
+
+			var GetStorageRequirements = Module.cwrap(
+				'GetStorageRequirements',
+				'number',
+				[ 'number', 'number', 'number' ]
+			);
+
+			var CompressImage = Module.cwrap(
+				'CompressImage',
+				 'void', 
+				[ 'number', 'number', 'number', 'number', 'number' ]
+			);
+
+
+			function compressImageData( imageData, flags ) {
+
+				flags = flags || ( ( 1 << 4 ) | 1 );
+
+				var inputData = imageData.data;
+				var width = imageData.width;
+				var height = imageData.height;
+
+				var sourcePointer = Module._malloc( width * height * 4 );
+				Module.HEAPU8.set( inputData, sourcePointer );
+
+				var outputSize = GetStorageRequirements( width, height, flags );
+				var distPointer = Module._malloc( outputSize );
+
+				console.log( 'compression start' );
+				console.time( 'compression' );
+				CompressImage( sourcePointer, width, height, distPointer, flags );
+				console.timeEnd( 'compression' );
+
+				var outputData = new Uint8Array( Module.HEAPU8.buffer, distPointer, outputSize );
+
+				Module._free( distPointer );
+				Module._free( sourcePointer );
+
+				return Promise.resolve( {
+					array: outputData,
+					width: width,
+					height: height
+				} );
+
+			}
+
+			fetch( 'image.jpg' ).then( res => {
+
+				return res.blob();
+
+			} ).then( blob => {
+
+				return createImageBitmap( blob );
+
+			} ).then( bitmap => {
+
+				var width = bitmap.width;
+				var height = bitmap.height;
+				var canvas = document.createElement( 'canvas' );
+				canvas.width = width;
+				canvas.height = height;
+				var context = canvas.getContext( '2d' );
+				context.drawImage( bitmap, 0, 0, width, height );
+				var data = context.getImageData( 0, 0, width, height );
+				compressImageData( data );
+
+			} );
+
+		</script>
+	</body>
+</html>
